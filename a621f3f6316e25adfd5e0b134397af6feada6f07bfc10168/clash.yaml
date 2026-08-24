@@ -1,0 +1,39 @@
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+
+proxies:
+  - name: HK-UCloud-Xray
+    type: vless
+    server: 165.154.46.196
+    port: 443
+    uuid: 41d85cf1-edb5-4ead-8c64-fa787f9d135d
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: www.microsoft.com
+    client-fingerprint: chrome
+    packet-encoding: xudp
+    reality-opts:
+      public-key: JdexGZIjYxQpWJP82EGoLHEcwSDJh8r5h9sPh17pyFg
+      short-id: d0e8f9a1b2c3d4e5
+    encryption: ""
+
+proxy-groups:
+  - name: 节点选择
+    type: select
+    proxies:
+      - HK-UCloud-Xray
+      - DIRECT
+
+rules:
+  - DOMAIN-SUFFIX,lan,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - MATCH,节点选择
