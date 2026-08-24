@@ -1,0 +1,42 @@
+name: Test HK VLESS node
+
+on:
+  push:
+    branches:
+      - clash-subscription
+
+jobs:
+  connectivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download verified Mihomo
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.19.30/mihomo-linux-amd64-compatible-v1.19.30.gz
+          echo "db214c7a2517e63c150d123178d16d102e03a241ccdae4e5e07ffbe9cf56c6f9  mihomo.gz" | sha256sum -c -
+          gzip -d mihomo.gz
+          chmod +x mihomo
+
+      - name: Validate and test node
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp a621f3f6316e25adfd5e0b134397af6feada6f07bfc10168/clash.yaml config.yaml
+          sed -i '1imixed-port: 17890' config.yaml
+          mkdir -p runtime
+          ./mihomo -d runtime -t -f config.yaml
+          ./mihomo -d runtime -f config.yaml >mihomo.log 2>&1 &
+          test_pid=$!
+          trap 'kill "$test_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          set +e
+          curl -v --max-time 20 --proxy http://127.0.0.1:17890 https://www.gstatic.com/generate_204 -o /dev/null
+          test_status=$?
+          set -e
+          sleep 1
+          sed -n '1,240p' mihomo.log
+          exit "$test_status"
